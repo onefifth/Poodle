@@ -29,8 +29,8 @@ function Poodle () {
     scene = new THREE.Scene()
     scene.background = new THREE.Color(0xffffff)
 
-    scene.add(this.create('rect', { x: 0, y: 0, z: 0 }, { x: 50, y: 100, z: 100 }))
-    scene.add(this.create('rect', { x: 0, y: 0, z: 0 }, { x: 75, y: 125, z: 125 }))
+    scene.add(this.create('cube', { x: 0, y: 0, z: 0 }, { x: 50, y: 50, z: 50 }))
+    scene.add(this.create('cube', { x: 25, y: 25, z: 25 }, { x: 50, y: 50, z: 50 }))
 
     //
 
@@ -54,13 +54,7 @@ function Poodle () {
   this.rect = (pos, size) => {
     var geometry = new THREE.Geometry()
 
-    const vertices = [
-      new THREE.Vector3(-size.x / 2, size.y / 2, 0),
-      new THREE.Vector3(size.x / 2, size.y / 2, 0),
-      new THREE.Vector3(size.x / 2, -size.y / 2, 0),
-      new THREE.Vector3(-size.x / 2, -size.y / 2, 0),
-      new THREE.Vector3(-size.x / 2, size.y / 2, 0)
-    ]
+    const vertices = this._rect(pos, size)
 
     for (const vertex of vertices) {
       geometry.vertices.push(vertex)
@@ -72,17 +66,47 @@ function Poodle () {
   this.cube = (pos, size) => {
     var geometry = new THREE.Geometry()
 
-    const vertices = [
-      new THREE.Vector3(-100, 0, 0),
-      new THREE.Vector3(100, 0, 0),
-      new THREE.Vector3(0, 100, 0)
-    ]
+    const vertices = this._cube(pos, size)
 
     for (const vertex of vertices) {
       geometry.vertices.push(vertex)
     }
 
     return new THREE.Line(geometry, this.material())
+  }
+
+  this._rect = (pos, size) => {
+    return [
+      new THREE.Vector3(-size.x / 2, size.y / 2, 0),
+      new THREE.Vector3(size.x / 2, size.y / 2, 0),
+      new THREE.Vector3(size.x / 2, -size.y / 2, 0),
+      new THREE.Vector3(-size.x / 2, -size.y / 2, 0),
+      new THREE.Vector3(-size.x / 2, size.y / 2, 0)
+    ]
+  }
+
+  this._cube = (pos, size) => {
+    return [
+      // top
+      new THREE.Vector3((-size.x / 2) + pos.x, (size.y / 2) + pos.y, (size.z / 2) + pos.y),
+      new THREE.Vector3((size.x / 2) + pos.x, (size.y / 2) + pos.y, (size.z / 2) + pos.y),
+      new THREE.Vector3((size.x / 2) + pos.x, (-size.y / 2) + pos.y, (size.z / 2) + pos.y),
+      new THREE.Vector3((-size.x / 2) + pos.x, (-size.y / 2) + pos.y, (size.z / 2) + pos.y),
+      new THREE.Vector3((-size.x / 2) + pos.x, (size.y / 2) + pos.y, (size.z / 2) + pos.y),
+      // bottom
+      new THREE.Vector3((-size.x / 2) + pos.x, (size.y / 2) + pos.y, (-size.z / 2) + pos.y),
+      new THREE.Vector3((size.x / 2) + pos.x, (size.y / 2) + pos.y, (-size.z / 2) + pos.y),
+      new THREE.Vector3((size.x / 2) + pos.x, (-size.y / 2) + pos.y, (-size.z / 2) + pos.y),
+      new THREE.Vector3((-size.x / 2) + pos.x, (-size.y / 2) + pos.y, (-size.z / 2) + pos.y),
+      new THREE.Vector3((-size.x / 2) + pos.x, (size.y / 2) + pos.y, (-size.z / 2) + pos.y),
+      // edges
+      new THREE.Vector3((-size.x / 2) + pos.x, (-size.y / 2) + pos.y, (-size.z / 2) + pos.y),
+      new THREE.Vector3((-size.x / 2) + pos.x, (-size.y / 2) + pos.y, (size.z / 2) + pos.y),
+      new THREE.Vector3((size.x / 2) + pos.x, (-size.y / 2) + pos.y, (size.z / 2) + pos.y),
+      new THREE.Vector3((size.x / 2) + pos.x, (-size.y / 2) + pos.y, (-size.z / 2) + pos.y),
+      new THREE.Vector3((size.x / 2) + pos.x, (size.y / 2) + pos.y, (-size.z / 2) + pos.y),
+      new THREE.Vector3((size.x / 2) + pos.x, (size.y / 2) + pos.y, (size.z / 2) + pos.y)
+    ]
   }
 
   this.material = () => {
