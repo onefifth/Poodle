@@ -1,0 +1,45 @@
+<!--
+
+commands
+
+-->
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <script type="text/javascript" src="three.js"></script>
+    <script type="text/javascript" src="poodle.js"></script>
+    <title>Poodle</title>
+  </head>
+  <body>
+    <script>
+      console.clear()
+
+      var renderer = new THREE.WebGLRenderer();
+      renderer.setSize( window.innerWidth, window.innerHeight );
+      document.body.appendChild( renderer.domElement );
+
+      var camera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 1, 500 );
+      camera.position.set( 20, 20, 100 );
+      camera.lookAt( 0, 0, 0 );
+
+      var scene = new THREE.Scene();
+
+      //create a blue LineBasicMaterial
+      var material = new THREE.LineBasicMaterial( { color: 0xffffff } );
+
+      var line1 = new THREE.Line( new THREE.BoxGeometry( 30, 30, 30 ), material );
+      var line2 = new THREE.Line( new THREE.BoxGeometry( 20, 20, 20 ), material );
+
+      scene.add( line1 );
+      scene.add( line2 );
+      renderer.render( scene, camera );
+    </script>
+    <style>
+      * { margin:0;padding:0;border:0;outline:0; position:fixed }
+      body { overflow: hidden; background:#eee }
+      canvas { border-radius: 3px; transition: top 250ms, left 250ms; image-rendering: pixelated; image-rendering: optimizeSpeed; }
+    </style>
+  </body>
+</html>

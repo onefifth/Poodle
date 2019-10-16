@@ -1,0 +1,22 @@
+{
+  "name": "poodle",
+  "version": "1.0.0",
+  "description": "Small, Sharp Scene Tool",
+  "main": "poodle.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hundredrabbits/Poodle.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/hundredrabbits/Poodle/issues"
+  },
+  "homepage": "https://github.com/hundredrabbits/Poodle#readme",
+  "standard": {
+    "ignore": ["three.js"]
+  }
+}
