@@ -25,7 +25,14 @@ function Poodle () {
     controls.maxDistance = 500
     controls.maxPolarAngle = Math.PI / 2
 
-    this.create()
+    //
+    scene = new THREE.Scene()
+    scene.background = new THREE.Color(0xffffff)
+
+    scene.add(this.create('rect', { x: 0, y: 0, z: 0 }, { x: 50, y: 100, z: 100 }))
+    scene.add(this.create('rect', { x: 0, y: 0, z: 0 }, { x: 75, y: 125, z: 125 }))
+
+    //
 
     host.appendChild(this.renderer.domElement)
 
@@ -40,14 +47,46 @@ function Poodle () {
     this.render()
   }
 
-  this.create = () => {
-    scene = new THREE.Scene()
-    scene.background = new THREE.Color(0xffffff)
+  this.create = (name, pos = { x: 0, y: 0, z: 0 }, size = { x: 100, y: 100, z: 100 }) => {
+    return this[name](pos, size)
+  }
 
-    var material = new THREE.LineBasicMaterial({ color: 0x00000 })
-    var line1 = new THREE.Line(new THREE.BoxGeometry(100, 200, 30), material)
+  this.rect = (pos, size) => {
+    var geometry = new THREE.Geometry()
 
-    scene.add(line1)
+    const vertices = [
+      new THREE.Vector3(-size.x / 2, size.y / 2, 0),
+      new THREE.Vector3(size.x / 2, size.y / 2, 0),
+      new THREE.Vector3(size.x / 2, -size.y / 2, 0),
+      new THREE.Vector3(-size.x / 2, -size.y / 2, 0),
+      new THREE.Vector3(-size.x / 2, size.y / 2, 0)
+    ]
+
+    for (const vertex of vertices) {
+      geometry.vertices.push(vertex)
+    }
+
+    return new THREE.Line(geometry, this.material())
+  }
+
+  this.cube = (pos, size) => {
+    var geometry = new THREE.Geometry()
+
+    const vertices = [
+      new THREE.Vector3(-100, 0, 0),
+      new THREE.Vector3(100, 0, 0),
+      new THREE.Vector3(0, 100, 0)
+    ]
+
+    for (const vertex of vertices) {
+      geometry.vertices.push(vertex)
+    }
+
+    return new THREE.Line(geometry, this.material())
+  }
+
+  this.material = () => {
+    return new THREE.LineBasicMaterial({ color: 0x00000 })
   }
 
   this.animate = () => {

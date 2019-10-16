@@ -15,12 +15,10 @@ commands
   </head>
   <body>
     <script>
-      // console.clear()
-
+      console.clear()
       const size = window.location.hash.substr(1)
       const width = size.indexOf('x') > 2 ? parseInt(size.split('x')[0]) : window.innerWidth - 15
       const height = size.indexOf('x') > 2 ? parseInt(size.split('x')[1]) : window.innerHeight - 15
-
       const poodle = new Poodle()
       poodle.install()
       poodle.start(width,height)      
