@@ -7,6 +7,7 @@ function Poodle () {
   this.bounds = { x: 1000, z: 1000 }
   this.showGuide = true
   this.mode = 'floor'
+  this.orientation = 0
   this.objects = []
 
   this.scene = new THREE.Scene()
@@ -44,7 +45,6 @@ function Poodle () {
     this.resize(w, h)
     this.setMode('floor')
     this.focus()
-    this.render()
   }
 
   this._floor = () => {
@@ -107,6 +107,7 @@ function Poodle () {
     const stepped = new THREE.Vector3().copy(pos).divideScalar(this.scale).floor().multiplyScalar(this.scale).addScalar(this.scale / 2)
     const voxel = new THREE.Line(geo, new THREE.LineBasicMaterial({ color: 0x000000 }))
     voxel.position.set(stepped.x, stepped.y, stepped.z)
+    voxel.rotation.y = this.orientation
     this.scene.add(voxel)
     this.objects.push(voxel)
   }
@@ -126,6 +127,7 @@ function Poodle () {
     const pos = new THREE.Vector3().copy(this.target.position)
     this.target.localToWorld(pos)
     this.camera.lookAt(pos)
+    this.render()
   }
 
   this.render = () => {
@@ -160,6 +162,11 @@ function Poodle () {
     console.log('mode', mode)
     this.mode = mode
     this.pointer.geometry = this[`_${mode}`]()
+  }
+
+  this.setOrientation = () => {
+    this.orientation += degToRad(90)
+    this.pointer.rotation.y = this.orientation
   }
 
   this.cast = (x, y) => {
@@ -235,6 +242,9 @@ function Poodle () {
     if (e.key === 'z') {
       this.camera.position.y -= this.scale
     }
+    if (e.key === 'r') {
+      this.setOrientation()
+    }
     // Options
     if (e.key === 'q') {
       this.target.position.set(0, 0, 0)
@@ -274,5 +284,9 @@ function Poodle () {
 
   function posEqual (a, b) {
     return a.x === b.x && a.y === b.y && a.z === b.z
+  }
+
+  function degToRad (deg) {
+    return deg * (Math.PI / 180)
   }
 }

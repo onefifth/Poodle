@@ -4,7 +4,6 @@ Small, Sharp Scene Tool
 
 ## TODO: 
 
-- erase
 - right click to move target
 - object scale with brackets
 - arc mesh
