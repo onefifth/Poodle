@@ -6,12 +6,12 @@
 function Poodle () {
   let scene
 
+  this.scale = 50
   this.renderer = new THREE.WebGLRenderer({ antialias: false, preserveDrawingBuffer: true })
   this.camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 1000)
-  this.target = new THREE.Mesh(new THREE.BoxBufferGeometry(10, 10, 10), new THREE.MeshBasicMaterial({ color: 0xff0000, wireframe: false }))
+  this.target = new THREE.Mesh(new THREE.BoxBufferGeometry(this.scale, this.scale, this.scale), new THREE.LineBasicMaterial({ color: 0xff0000 }))
   this.el = this.renderer.domElement
   this.offset = { x: 0, y: 0 }
-  this.scale = 50
 
   this.install = (host = document.body) => {
     this.camera.position.z = 250
@@ -119,37 +119,41 @@ function Poodle () {
   }
 
   this.onKeyDown = (e) => {
-    const speed = 10
-
     if (e.key === 'A') {
-      this.camera.rotation.y += speed / 50
+      this.target.position.x += this.scale
     }
     if (e.key === 'D') {
-      this.camera.rotation.y -= speed / 50
+      this.target.position.x -= this.scale 
     }
     if (e.key === 'W') {
-      this.camera.rotation.x += speed / 50
+      this.target.position.z += this.scale 
     }
     if (e.key === 'S') {
-      this.camera.rotation.x -= speed / 50
+      this.target.position.z -= this.scale 
+    }
+    if (e.key === 'X') {
+      this.target.position.y += this.scale 
+    }
+    if (e.key === 'Z') {
+      this.target.position.y -= this.scale 
     }
     if (e.key === 'w') {
-      this.camera.translateZ(-speed)
+      this.camera.translateZ(-this.scale)
     }
     if (e.key === 's') {
-      this.camera.translateZ(speed)
+      this.camera.translateZ(this.scale)
     }
     if (e.key === 'a') {
-      this.camera.translateX(-speed)
+      this.camera.translateX(-this.scale)
     }
     if (e.key === 'd') {
-      this.camera.translateX(speed)
+      this.camera.translateX(this.scale)
     }
     if (e.key === 'x') {
-      this.camera.position.y += speed
+      this.camera.position.y += this.scale
     }
     if (e.key === 'z') {
-      this.camera.position.y += speed
+      this.camera.position.y -= this.scale
     }
     this.focus()
   }
