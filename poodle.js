@@ -5,10 +5,19 @@ function Poodle () {
   this.scale = 50
   this.offset = { x: 0, y: 0 }
 
+  this.bounds = { x: 1000, z: 1000 }
+
+  var targetGeo = new THREE.Geometry()
+  targetGeo.vertices.push(new THREE.Vector3(this.scale / 2, 0, this.scale / 2))
+  targetGeo.vertices.push(new THREE.Vector3(this.scale / 2, 0, -this.scale / 2))
+  targetGeo.vertices.push(new THREE.Vector3(-this.scale / 2, 0, -this.scale / 2))
+  targetGeo.vertices.push(new THREE.Vector3(-this.scale / 2, 0, this.scale / 2))
+  targetGeo.vertices.push(new THREE.Vector3(this.scale / 2, 0, this.scale / 2))
+
   this.camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 10000)
   this.renderer = new THREE.WebGLRenderer({ antialias: false, preserveDrawingBuffer: true, logarithmicDepthBuffer: true })
-  this.target = new THREE.Mesh(new THREE.BoxBufferGeometry(this.scale, this.scale, this.scale), new THREE.MeshBasicMaterial({ color: 0x72dec2, visible: true }))
-  this.grid = new THREE.GridHelper(this.scale * 50, this.scale / 2)
+  this.target = new THREE.Line(targetGeo, new THREE.MeshBasicMaterial({ color: 0x72dec2, visible: true }))
+  this.grid = new THREE.GridHelper(20 * this.scale, 20)
   this.pointer = new THREE.Mesh(new THREE.BoxBufferGeometry(this.scale, this.scale, this.scale), new THREE.MeshBasicMaterial({ color: 0xff0000, wireframe: true }))
   this.raycaster = new THREE.Raycaster()
   this.mouse = new THREE.Vector2()
@@ -20,24 +29,20 @@ function Poodle () {
   this.mode = 'floor'
 
   var scene
-  var plane
   var objects = []
 
   this.install = (host = document.body) => {
     scene = new THREE.Scene()
     scene.background = new THREE.Color(0xffffff)
 
-    scene.add(this.target)
-    scene.add(this.pointer)
-
-    var geometry = new THREE.PlaneBufferGeometry(1000, 1000)
+    var geometry = new THREE.PlaneBufferGeometry(this.bounds.x, this.bounds.z)
     geometry.rotateX(-Math.PI / 2)
-    plane = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({ visible: false }))
-    plane.add(this.grid)
-
-    objects.push(plane)
-
-    scene.add(plane)
+    this.contact = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({ visible: false }))
+    this.contact.add(this.grid)
+    this.contact.add(this.target)
+    objects.push(this.contact)
+    scene.add(this.pointer)
+    scene.add(this.contact)
 
     document.addEventListener('mousemove', this.onMouseMove, false)
     document.addEventListener('mousedown', this.onMouseDown, false)
@@ -203,7 +208,7 @@ function Poodle () {
       var intersect = intersects[0]
       // delete cube
       if (event.shiftKey) {
-        if (intersect.object !== plane) {
+        if (intersect.object !== this.contact) {
           scene.remove(intersect.object)
           objects.splice(objects.indexOf(intersect.object), 1)
         }
@@ -230,10 +235,10 @@ function Poodle () {
       this.target.position.z -= this.scale
     }
     if (e.key === 'X') {
-      this.target.position.y += this.scale
+      this.contact.position.y += this.scale
     }
     if (e.key === 'Z') {
-      this.target.position.y -= this.scale
+      this.contact.position.y -= this.scale
     }
     if (e.key === 'w') {
       this.camera.translateZ(-this.scale)
@@ -248,16 +253,17 @@ function Poodle () {
       this.camera.translateX(this.scale)
     }
     if (e.key === 'x') {
-      plane.position.y += this.scale
+      this.camera.position.y += this.scale
     }
     if (e.key === 'z') {
-      plane.position.y -= this.scale
+      this.camera.position.y -= this.scale
     }
     // Options
     if (e.key === 'q') {
       this.target.position.set(0, 0, 0)
     }
     if (e.key === 'Tab') {
+      e.preventDefault()
       this.toggleGuide()
     }
 
