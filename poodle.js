@@ -23,10 +23,8 @@ function Poodle () {
 
   this.install = (host = document.body) => {
     this.scene.background = new THREE.Color(0xffffff)
-
     this.target.geometry = this._target()
     this.contact.geometry = this._contact()
-
     this.contact.add(this.grid)
     this.contact.add(this.target)
     this.objects.push(this.contact)
@@ -52,8 +50,7 @@ function Poodle () {
   this._floor = () => {
     const geo = new THREE.Geometry()
     const g = this.guides()
-    const vertices = [g.RBF, g.RBB, g.LBB, g.LBF, g.RBF]
-    for (const vertex of vertices) {
+    for (const vertex of [g.RBF, g.RBB, g.LBB, g.LBF, g.RBF]) {
       geo.vertices.push(vertex)
     }
     return geo
@@ -62,8 +59,7 @@ function Poodle () {
   this._ramp = () => {
     const geo = new THREE.Geometry()
     const g = this.guides()
-    const vertices = [g.RTF, g.RTB, g.LBB, g.LBF, g.RTF]
-    for (const vertex of vertices) {
+    for (const vertex of [g.RTF, g.RTB, g.LBB, g.LBF, g.RTF]) {
       geo.vertices.push(vertex)
     }
     return geo
@@ -72,8 +68,7 @@ function Poodle () {
   this._wall = () => {
     const geo = new THREE.Geometry()
     const g = this.guides()
-    const vertices = [g.RTF, g.RTB, g.RBB, g.RBF, g.RTF]
-    for (const vertex of vertices) {
+    for (const vertex of [g.RTF, g.RTB, g.RBB, g.RBF, g.RTF]) {
       geo.vertices.push(vertex)
     }
     return geo
@@ -108,22 +103,29 @@ function Poodle () {
     }
   }
 
-  this.material = () => {
-    return new THREE.LineBasicMaterial({ color: 0x000000 })
-  }
-
-  this.add = (pos) => {
+  this.add = (pos, geo) => {
     const stepped = new THREE.Vector3().copy(pos).divideScalar(this.scale).floor().multiplyScalar(this.scale).addScalar(this.scale / 2)
-    var voxel = new THREE.Line(this[`_${this.mode}`](), this.material())
+    const voxel = new THREE.Line(geo, new THREE.LineBasicMaterial({ color: 0x000000 }))
     voxel.position.set(stepped.x, stepped.y, stepped.z)
     this.scene.add(voxel)
     this.objects.push(voxel)
   }
 
+  this.remove = (pos) => {
+    for (const obj of this.objects) {
+      if (posEqual(pos, obj.position)) {
+        console.log('erase', pos)
+        this.scene.remove(obj)
+        this.objects.splice(this.objects.indexOf(obj), 1)
+        return
+      }
+    }
+  }
+
   this.focus = () => {
-    var position = new THREE.Vector3().copy(this.target.position)
-    this.target.localToWorld(position)
-    this.camera.lookAt(position)
+    const pos = new THREE.Vector3().copy(this.target.position)
+    this.target.localToWorld(pos)
+    this.camera.lookAt(pos)
   }
 
   this.render = () => {
@@ -160,41 +162,40 @@ function Poodle () {
     this.pointer.geometry = this[`_${mode}`]()
   }
 
+  this.cast = (x, y) => {
+    this.mouse.set((x / this.el.width) * 2 - 1, -(y / this.el.height) * 2 + 1)
+    this.raycaster.setFromCamera(this.mouse, this.camera)
+    return this.raycaster.intersectObjects(this.objects)
+  }
+
   // Events
 
   this.onMouseMove = (event) => {
     event.preventDefault()
-    this.mouse.set((event.layerX / this.el.width) * 2 - 1, -(event.layerY / this.el.height) * 2 + 1)
-    this.raycaster.setFromCamera(this.mouse, this.camera)
-    var intersects = this.raycaster.intersectObjects(this.objects)
-    if (intersects.length > 0) {
-      var intersect = intersects[0]
+    const intersects = this.cast(event.layerX, event.layerY)
+    if (intersects.length > 0 && intersects[0].face) {
+      const intersect = intersects[0]
       this.pointer.position.copy(intersect.point).add(intersect.face.normal)
-      this.pointer.position.divideScalar(50).floor().multiplyScalar(50).addScalar(25)
+      this.pointer.position.divideScalar(this.scale).floor().multiplyScalar(this.scale).addScalar(this.scale / 2)
     }
     this.render()
   }
 
   this.onMouseDown = (event) => {
     event.preventDefault()
-    this.mouse.set((event.layerX / this.el.width) * 2 - 1, -(event.layerY / this.el.height) * 2 + 1)
-    this.raycaster.setFromCamera(this.mouse, this.camera)
-    var intersects = this.raycaster.intersectObjects(this.objects)
+    const intersects = this.cast(event.layerX, event.layerY)
     if (intersects.length > 0) {
-      var intersect = intersects[0]
-      // delete cube
-      if (event.shiftKey) {
-        if (intersect.object !== this.contact) {
-          this.scene.remove(intersect.object)
-          this.objects.splice(this.objects.indexOf(intersect.object), 1)
-        }
-        // create cube
-      } else {
+      const intersect = intersects[0]
+      if (event.shiftKey && intersect.object === this.contact) {
+        const pos = new THREE.Vector3().copy(intersect.point).divideScalar(this.scale).floor().multiplyScalar(this.scale).addScalar(this.scale / 2)
+        this.remove(pos)
+      } else if (intersect.face) {
         const pos = new THREE.Vector3().copy(intersect.point).add(intersect.face.normal)
-        this.add(pos)
+        const geo = this[`_${this.mode}`]()
+        this.add(pos, geo)
       }
-      this.render()
     }
+    this.render()
   }
 
   this.onKeyDown = (e) => {
@@ -269,5 +270,9 @@ function Poodle () {
     link.setAttribute('href', base64)
     link.setAttribute('download', name)
     link.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, view: window }))
+  }
+
+  function posEqual (a, b) {
+    return a.x === b.x && a.y === b.y && a.z === b.z
   }
 }
