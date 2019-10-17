@@ -6,7 +6,7 @@ function Poodle () {
 
   this.camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 10000)
   this.renderer = new THREE.WebGLRenderer({ antialias: false, preserveDrawingBuffer: true, logarithmicDepthBuffer: true })
-  this.target = new THREE.Mesh(new THREE.BoxBufferGeometry(this.scale, this.scale, this.scale), new THREE.MeshBasicMaterial({ visible: false }))
+  this.target = new THREE.Mesh(new THREE.BoxBufferGeometry(this.scale, this.scale, this.scale), new THREE.MeshBasicMaterial({ color: 0x72dec2, visible: true }))
   this.grid = new THREE.GridHelper(this.scale * 50, this.scale / 2)
   this.pointer = new THREE.Mesh(new THREE.BoxBufferGeometry(this.scale, this.scale, this.scale), new THREE.MeshBasicMaterial({ color: 0xff0000, wireframe: true }))
   this.raycaster = new THREE.Raycaster()
@@ -257,7 +257,7 @@ function Poodle () {
     if (e.key === 'q') {
       this.target.position.set(0, 0, 0)
     }
-    if (e.key === 'h') {
+    if (e.key === 'Tab') {
       this.toggleGuide()
     }
 
