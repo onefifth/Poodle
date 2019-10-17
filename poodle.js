@@ -4,9 +4,9 @@
 /* global MouseEvent */
 
 function Poodle () {
-  this.renderer = new THREE.WebGLRenderer({ antialias: false })
+  this.renderer = new THREE.WebGLRenderer({ antialias: false, preserveDrawingBuffer: true, logarithmicDepthBuffer: true })
   this.scale = 50
-  this.target = new THREE.Mesh(new THREE.BoxBufferGeometry(this.scale, this.scale, this.scale), new THREE.LineBasicMaterial({ color: 0xff0000 }))
+  this.target = new THREE.Mesh(new THREE.BoxBufferGeometry(this.scale, this.scale, this.scale), new THREE.MeshBasicMaterial({ visible: false }))
   this.el = this.renderer.domElement
 
   var scene
@@ -35,8 +35,8 @@ function Poodle () {
     cubeGeo = new THREE.BoxBufferGeometry(this.scale, this.scale, this.scale)
 
     // grid
-    var gridHelper = new THREE.GridHelper(this.scale * 50, this.scale/2)
-    scene.add(gridHelper)
+    // var gridHelper = new THREE.GridHelper(this.scale * 50, this.scale/2)
+    // scene.add(gridHelper)
 
     //
     raycaster = new THREE.Raycaster()
@@ -62,7 +62,7 @@ function Poodle () {
     this.render()
   }
 
-  this.cube = (pos, size, scale = this.scale) => {
+  this.cube = (size, scale = this.scale) => {
     var geometry = new THREE.Geometry()
 
     const vertices = this._cube(size)
@@ -71,23 +71,14 @@ function Poodle () {
       geometry.vertices.push(vertex)
     }
 
-    const line = new THREE.Line(geometry, this.material())
-    const mesh = new THREE.Mesh(new THREE.BoxBufferGeometry(size.x * scale * 0.99, size.y * scale * 0.99, size.z * scale * 0.99), this.defMat())
-
-    line.position.x = pos.x * scale
-    line.position.y = pos.y * scale
-    line.position.z = pos.z * scale
-
-    // line.add(mesh)
-
-    return line
+    return new THREE.Line(geometry, this.material())
   }
 
   this.create = (name, pos = { x: 0, y: 0, z: 0 }, size = { x: 1, y: 1, z: 1 }) => {
     return this[name](pos, size)
   }
 
-  this._cube = (size, scale = this.scale) => {
+  this._cube = (size = { x: 1, y: 1, z: 1 }, scale = this.scale) => {
     const g = this.guides(size, scale)
     return [
       g.RTF, g.RTB, g.LTB, g.LTF, g.RTF
@@ -139,14 +130,21 @@ function Poodle () {
         }
         // create cube
       } else {
-        var voxel = new THREE.Mesh(cubeGeo, this.material())
-        voxel.position.copy(intersect.point).add(intersect.face.normal)
-        voxel.position.divideScalar(50).floor().multiplyScalar(50).addScalar(25)
-        scene.add(voxel)
-        objects.push(voxel)
+        const pos = new THREE.Vector3().copy(intersect.point).add(intersect.face.normal)
+        this.add(pos)
       }
       this.render()
     }
+  }
+
+  this.add = (pos) => {
+    const stepped = new THREE.Vector3().copy(pos).divideScalar(this.scale).floor().multiplyScalar(this.scale).addScalar(this.scale / 2)
+
+    var voxel = this.cube()
+
+    voxel.position.set(stepped.x, stepped.y, stepped.z)
+    scene.add(voxel)
+    objects.push(voxel)
   }
 
   this.focus = () => {
