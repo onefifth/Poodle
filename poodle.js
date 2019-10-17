@@ -4,33 +4,36 @@
 /* global MouseEvent */
 
 function Poodle () {
-  let camera, controls, scene
+  let scene
 
   this.renderer = new THREE.WebGLRenderer({ antialias: false, preserveDrawingBuffer: true })
+  this.camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 1000)
+  this.target = new THREE.Mesh(new THREE.BoxBufferGeometry(10, 10, 10), new THREE.MeshBasicMaterial({ color: 0xff0000, wireframe: false }))
   this.el = this.renderer.domElement
-  this.ratio = window.devicePixelRatio
   this.offset = { x: 0, y: 0 }
+  this.scale = 50
 
   this.install = (host = document.body) => {
-    camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 1000)
-    camera.position.set(400, 200, 0)
+    this.camera.position.z = 250
 
     // controls
 
-    controls = new THREE.OrbitControls(camera, this.renderer.domElement)
-    controls.enableDamping = true // an animation loop is required when either damping or auto-rotation are enabled
-    controls.dampingFactor = 0.05
-    controls.screenSpacePanning = false
-    controls.minDistance = 100
-    controls.maxDistance = 500
-    controls.maxPolarAngle = Math.PI / 2
+    // controls = new THREE.OrbitControls(camera, this.renderer.domElement)
+    // controls.screenSpacePanning = false
+    // controls.minDistance = 100
+    // controls.maxDistance = 500
+    // controls.maxPolarAngle = Math.PI / 2
 
     //
     scene = new THREE.Scene()
     scene.background = new THREE.Color(0xffffff)
 
-    scene.add(this.create('cube', { x: 0, y: 0, z: 0 }, { x: 50, y: 50, z: 50 }))
-    scene.add(this.create('cube', { x: 25, y: 25, z: 25 }, { x: 50, y: 50, z: 50 }))
+    scene.add(this.create('cube', { x: 0, y: 0, z: 0 }))
+    scene.add(this.create('cube', { x: 1, y: 0, z: 0 }))
+    scene.add(this.create('cube', { x: 2, y: 0, z: 0 }))
+    scene.add(this.create('cube', { x: -1, y: 1, z: 0 }))
+
+    scene.add(this.target)
 
     //
 
@@ -43,88 +46,112 @@ function Poodle () {
   this.start = (w, h) => {
     this.resize(w, h)
     requestAnimationFrame(this.animate)
-    controls.update()
+    // controls.update()
     this.render()
   }
 
-  this.create = (name, pos = { x: 0, y: 0, z: 0 }, size = { x: 100, y: 100, z: 100 }) => {
+  this.create = (name, pos = { x: 0, y: 0, z: 0 }, size = { x: 1, y: 1, z: 1 }) => {
     return this[name](pos, size)
   }
 
-  this.rect = (pos, size) => {
+  this.cube = (pos, size, scale = this.scale) => {
     var geometry = new THREE.Geometry()
 
-    const vertices = this._rect(pos, size)
+    const vertices = this._cube(size)
 
     for (const vertex of vertices) {
       geometry.vertices.push(vertex)
     }
 
-    return new THREE.Line(geometry, this.material())
+    const line = new THREE.Line(geometry, this.lineMat())
+    const mesh = new THREE.Mesh(new THREE.BoxBufferGeometry(size.x * scale * 0.99, size.y * scale * 0.99, size.z * scale * 0.99), this.defMat())
+
+    line.position.x = pos.x * scale
+    line.position.y = pos.y * scale
+    line.position.z = pos.z * scale
+
+    // line.add(mesh)
+
+    return line
   }
 
-  this.cube = (pos, size) => {
-    var geometry = new THREE.Geometry()
+  this._cube = (size, scale = this.scale) => {
+    const g = this.guides(size, scale)
+    return [
+      g.RTF, g.RTB, g.LTB, g.LTF, g.RTF
+    ]
+  }
 
-    const vertices = this._cube(pos, size)
-
-    for (const vertex of vertices) {
-      geometry.vertices.push(vertex)
+  this.guides = (size, scale) => {
+    return {
+      RTF: new THREE.Vector3(scale * (size.x / 2), scale * (size.y / 2), scale * (size.z / 2)),
+      RTB: new THREE.Vector3(scale * (size.x / 2), scale * (size.y / 2), scale * (-size.z / 2)),
+      LTF: new THREE.Vector3(scale * (-size.x / 2), scale * (size.y / 2), scale * (size.z / 2)),
+      LTB: new THREE.Vector3(scale * (-size.x / 2), scale * (size.y / 2), scale * (-size.z / 2)),
+      RBF: new THREE.Vector3(scale * (size.x / 2), -scale * (size.y / 2), scale * (size.z / 2)),
+      RBB: new THREE.Vector3(scale * (size.x / 2), -scale * (size.y / 2), scale * (-size.z / 2)),
+      LBF: new THREE.Vector3(scale * (-size.x / 2), -scale * (size.y / 2), scale * (size.z / 2)),
+      LBB: new THREE.Vector3(scale * (-size.x / 2), -scale * (size.y / 2), scale * (-size.z / 2))
     }
-
-    return new THREE.Line(geometry, this.material())
   }
 
-  this._rect = (pos, size) => {
-    return [
-      new THREE.Vector3(-size.x / 2, size.y / 2, 0),
-      new THREE.Vector3(size.x / 2, size.y / 2, 0),
-      new THREE.Vector3(size.x / 2, -size.y / 2, 0),
-      new THREE.Vector3(-size.x / 2, -size.y / 2, 0),
-      new THREE.Vector3(-size.x / 2, size.y / 2, 0)
-    ]
+  this.focus = () => {
+    var position = new THREE.Vector3().copy(this.target.position)
+    this.target.localToWorld(position)
+    this.camera.lookAt(position)
   }
 
-  this._cube = (pos, size) => {
-    return [
-      // top
-      new THREE.Vector3((-size.x / 2) + pos.x, (size.y / 2) + pos.y, (size.z / 2) + pos.y),
-      new THREE.Vector3((size.x / 2) + pos.x, (size.y / 2) + pos.y, (size.z / 2) + pos.y),
-      new THREE.Vector3((size.x / 2) + pos.x, (-size.y / 2) + pos.y, (size.z / 2) + pos.y),
-      new THREE.Vector3((-size.x / 2) + pos.x, (-size.y / 2) + pos.y, (size.z / 2) + pos.y),
-      new THREE.Vector3((-size.x / 2) + pos.x, (size.y / 2) + pos.y, (size.z / 2) + pos.y),
-      // bottom
-      new THREE.Vector3((-size.x / 2) + pos.x, (size.y / 2) + pos.y, (-size.z / 2) + pos.y),
-      new THREE.Vector3((size.x / 2) + pos.x, (size.y / 2) + pos.y, (-size.z / 2) + pos.y),
-      new THREE.Vector3((size.x / 2) + pos.x, (-size.y / 2) + pos.y, (-size.z / 2) + pos.y),
-      new THREE.Vector3((-size.x / 2) + pos.x, (-size.y / 2) + pos.y, (-size.z / 2) + pos.y),
-      new THREE.Vector3((-size.x / 2) + pos.x, (size.y / 2) + pos.y, (-size.z / 2) + pos.y),
-      // edges
-      new THREE.Vector3((-size.x / 2) + pos.x, (-size.y / 2) + pos.y, (-size.z / 2) + pos.y),
-      new THREE.Vector3((-size.x / 2) + pos.x, (-size.y / 2) + pos.y, (size.z / 2) + pos.y),
-      new THREE.Vector3((size.x / 2) + pos.x, (-size.y / 2) + pos.y, (size.z / 2) + pos.y),
-      new THREE.Vector3((size.x / 2) + pos.x, (-size.y / 2) + pos.y, (-size.z / 2) + pos.y),
-      new THREE.Vector3((size.x / 2) + pos.x, (size.y / 2) + pos.y, (-size.z / 2) + pos.y),
-      new THREE.Vector3((size.x / 2) + pos.x, (size.y / 2) + pos.y, (size.z / 2) + pos.y)
-    ]
+  this.lineMat = () => {
+    return new THREE.LineBasicMaterial({ color: 0x000000 })
   }
 
-  this.material = () => {
-    return new THREE.LineBasicMaterial({ color: 0x00000 })
+  this.defMat = () => {
+    return new THREE.MeshBasicMaterial({ color: 0xff0000, wireframe: false })
   }
 
   this.animate = () => {
     requestAnimationFrame(this.animate)
-    controls.update() // only required if controls.enableDamping = true, or if controls.autoRotate = true
     this.render()
   }
 
   this.render = () => {
-    this.renderer.render(scene, camera)
+    this.renderer.render(scene, this.camera)
   }
 
   this.onKeyDown = (e) => {
+    const speed = 10
 
+    if (e.key === 'A') {
+      this.camera.rotation.y += speed / 50
+    }
+    if (e.key === 'D') {
+      this.camera.rotation.y -= speed / 50
+    }
+    if (e.key === 'W') {
+      this.camera.rotation.x += speed / 50
+    }
+    if (e.key === 'S') {
+      this.camera.rotation.x -= speed / 50
+    }
+    if (e.key === 'w') {
+      this.camera.translateZ(-speed)
+    }
+    if (e.key === 's') {
+      this.camera.translateZ(speed)
+    }
+    if (e.key === 'a') {
+      this.camera.translateX(-speed)
+    }
+    if (e.key === 'd') {
+      this.camera.translateX(speed)
+    }
+    if (e.key === 'x') {
+      this.camera.position.y += speed
+    }
+    if (e.key === 'z') {
+      this.camera.position.y += speed
+    }
+    this.focus()
   }
 
   this.onKeyUp = (e) => {
@@ -140,9 +167,8 @@ function Poodle () {
     this.el.style.width = w + 'px'
     this.el.style.height = h + 'px'
     this.center()
-    camera.aspect = w / h
-    camera.updateProjectionMatrix()
-    this.renderer.setPixelRatio(window.devicePixelRatio)
+    this.camera.aspect = w / h
+    this.camera.updateProjectionMatrix()
     this.renderer.setSize(w, h)
   }
 

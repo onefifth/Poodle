@@ -228,8 +228,6 @@ THREE.OrbitControls = function (object, domElement) {
     document.removeEventListener('mouseup', onMouseUp, false)
 
     window.removeEventListener('keydown', onKeyDown, false)
-
-    // scope.dispatchEvent( { type: 'dispose' } ); // should this be added here?
   }
 
   //
@@ -457,32 +455,22 @@ THREE.OrbitControls = function (object, domElement) {
   function handleKeyDown (event) {
     var needsUpdate = false
 
-    switch (event.keyCode) {
-      case scope.keys.UP:
-        pan(0, scope.keyPanSpeed)
-        needsUpdate = true
-        break
-
-      case scope.keys.BOTTOM:
-        pan(0, -scope.keyPanSpeed)
-        needsUpdate = true
-        break
-
-      case scope.keys.LEFT:
-        pan(scope.keyPanSpeed, 0)
-        needsUpdate = true
-        break
-
-      case scope.keys.RIGHT:
-        pan(-scope.keyPanSpeed, 0)
-        needsUpdate = true
-        break
+    if (event.key === 'arrowUp' || event.key === 'w') {
+      pan(0, scope.keyPanSpeed)
+      needsUpdate = true
+    } else if (event.key === 'arrowDown' || event.key === 's') {
+      pan(0, -scope.keyPanSpeed)
+      needsUpdate = true
+    } else if (event.key === 'arrowLeft' || event.key === 'a') {
+      pan(scope.keyPanSpeed, 0)
+      needsUpdate = true
+    } else if (event.key === 'arrowRight' || event.key === 'd') {
+      pan(-scope.keyPanSpeed, 0)
+      needsUpdate = true
     }
 
     if (needsUpdate) {
-      // prevent the browser from scrolling on cursor keys
       event.preventDefault()
-
       scope.update()
     }
   }
