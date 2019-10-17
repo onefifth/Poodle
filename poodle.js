@@ -119,8 +119,17 @@ function Poodle () {
         this.scene.remove(obj)
         this.objects.splice(this.objects.indexOf(obj), 1)
         return
+      } else {
+        console.log(obj.position, pos)
       }
     }
+  }
+
+  this.delete = () => {
+    if (this.objects.length < 2) { return }
+    const obj = this.objects[this.objects.length - 1]
+    this.scene.remove(obj)
+    this.objects.splice(this.objects.length - 1, 1)
   }
 
   this.focus = () => {
@@ -252,6 +261,10 @@ function Poodle () {
     if (e.key === 'Tab') {
       e.preventDefault()
       this.toggleGuide()
+    }
+    if (e.key === 'Backspace') {
+      e.preventDefault()
+      this.delete()
     }
 
     if (e.key === '1') {
