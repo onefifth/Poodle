@@ -1,71 +1,87 @@
 /* global THREE */
-/* global material */
-/* global requestAnimationFrame */
 /* global MouseEvent */
 
 function Poodle () {
-  this.renderer = new THREE.WebGLRenderer({ antialias: false, preserveDrawingBuffer: true, logarithmicDepthBuffer: true })
   this.scale = 50
+
+  this.camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 10000)
+  this.renderer = new THREE.WebGLRenderer({ antialias: false, preserveDrawingBuffer: true, logarithmicDepthBuffer: true })
   this.target = new THREE.Mesh(new THREE.BoxBufferGeometry(this.scale, this.scale, this.scale), new THREE.MeshBasicMaterial({ visible: false }))
+  this.grid = new THREE.GridHelper(this.scale * 50, this.scale / 2)
+  this.pointer = new THREE.Mesh(new THREE.BoxBufferGeometry(this.scale, this.scale, this.scale), new THREE.MeshBasicMaterial({ color: 0xff0000, wireframe: true }))
+  this.raycaster = new THREE.Raycaster()
+  this.mouse = new THREE.Vector2()
+
   this.el = this.renderer.domElement
+
+  // Controls
+  this.showGuide = true
+  this.mode = 'floor'
 
   var scene
   var plane
-  var mouse; var raycaster; var isShiftDown = false
-  var rollOverMesh, rollOverMaterial
-  var cubeGeo
   var objects = []
 
   this.install = (host = document.body) => {
-    this.camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 10000)
-    this.camera.position.set(500, 800, 1300)
-    this.camera.lookAt(0, 0, 0)
-
     scene = new THREE.Scene()
     scene.background = new THREE.Color(0xffffff)
 
     scene.add(this.target)
-
-    var rollOverGeo = new THREE.BoxBufferGeometry(this.scale, this.scale, this.scale)
-    rollOverMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000, opacity: 0.25, transparent: true, wireframe: true })
-    rollOverMesh = new THREE.Mesh(rollOverGeo, rollOverMaterial)
-    scene.add(rollOverMesh)
-
-    // cubes
-    cubeGeo = new THREE.BoxBufferGeometry(this.scale, this.scale, this.scale)
-
-    // grid
-    // var gridHelper = new THREE.GridHelper(this.scale * 50, this.scale/2)
-    // scene.add(gridHelper)
-
-    //
-    raycaster = new THREE.Raycaster()
-    mouse = new THREE.Vector2()
+    scene.add(this.pointer)
 
     var geometry = new THREE.PlaneBufferGeometry(1000, 1000)
     geometry.rotateX(-Math.PI / 2)
     plane = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({ visible: false }))
-    scene.add(plane)
+    plane.add(this.grid)
+
     objects.push(plane)
+
+    scene.add(plane)
 
     document.addEventListener('mousemove', this.onMouseMove, false)
     document.addEventListener('mousedown', this.onMouseDown, false)
     document.addEventListener('keydown', this.onKeyDown, false)
     document.addEventListener('keyup', this.onKeyUp, false)
 
-    host.appendChild(poodle.renderer.domElement)
+    host.appendChild(this.renderer.domElement)
   }
 
   this.start = (w, h) => {
+    this.camera.position.set(500, 800, 1300)
     this.renderer.setSize(window.innerWidth, window.innerHeight)
     // this.resize(w, h)
+    this.focus()
     this.render()
   }
 
-  this.cube = (size, scale = this.scale) => {
+  this.floor = (size, scale = this.scale) => {
     var geometry = new THREE.Geometry()
 
     const vertices = this._cube(size)
+
+    for (const vertex of vertices) {
+      geometry.vertices.push(vertex)
+    }
+
+    return new THREE.Line(geometry, this.material())
+  }
+
+  this.ramp = (size, scale = this.scale) => {
+    var geometry = new THREE.Geometry()
+
+    const vertices = this._ramp(size)
+
+    for (const vertex of vertices) {
+      geometry.vertices.push(vertex)
+    }
+
+    return new THREE.Line(geometry, this.material())
+  }
+
+  this.wall = (size, scale = this.scale) => {
+    var geometry = new THREE.Geometry()
+
+    const vertices = this._wall(size)
 
     for (const vertex of vertices) {
       geometry.vertices.push(vertex)
@@ -81,7 +97,21 @@ function Poodle () {
   this._cube = (size = { x: 1, y: 1, z: 1 }, scale = this.scale) => {
     const g = this.guides(size, scale)
     return [
-      g.RTF, g.RTB, g.LTB, g.LTF, g.RTF
+      g.RBF, g.RBB, g.LBB, g.LBF, g.RBF
+    ]
+  }
+
+  this._ramp = (size = { x: 1, y: 1, z: 1 }, scale = this.scale) => {
+    const g = this.guides(size, scale)
+    return [
+      g.RTF, g.RTB, g.LBB, g.LBF, g.RTF
+    ]
+  }
+
+  this._wall = (size = { x: 1, y: 1, z: 1 }, scale = this.scale) => {
+    const g = this.guides(size, scale)
+    return [
+      g.RTF, g.RTB, g.RBB, g.RBF, g.RTF
     ]
   }
 
@@ -102,24 +132,73 @@ function Poodle () {
     return new THREE.LineBasicMaterial({ color: 0x000000 })
   }
 
+  this.add = (pos) => {
+    const stepped = new THREE.Vector3().copy(pos).divideScalar(this.scale).floor().multiplyScalar(this.scale).addScalar(this.scale / 2)
+    var voxel = this[this.mode]()
+    voxel.position.set(stepped.x, stepped.y, stepped.z)
+    scene.add(voxel)
+    objects.push(voxel)
+  }
+
+  this.focus = () => {
+    var position = new THREE.Vector3().copy(this.target.position)
+    this.target.localToWorld(position)
+    this.camera.lookAt(position)
+  }
+
+  this.render = () => {
+    this.renderer.render(scene, this.camera)
+  }
+
+  this.resize = (w, h) => {
+    document.location.hash = `#${w}x${h}`
+    this.el.width = w
+    this.el.height = h
+    this.el.style.width = w + 'px'
+    this.el.style.height = h + 'px'
+    this.center()
+    this.camera.aspect = w / h
+    this.camera.updateProjectionMatrix()
+    this.renderer.setSize(w, h)
+  }
+
+  this.center = () => {
+    this.offset.x = (window.innerWidth - this.el.width) / 2
+    this.offset.y = -(window.innerHeight - this.el.height) / 2
+    this.el.setAttribute('style', `left:${parseInt(this.offset.x)}px;top:${-parseInt(this.offset.y)}px`)
+  }
+
+  this.toggleGuide = () => {
+    this.showGuide = !this.showGuide
+    this.grid.material.visible = this.showGuide
+    this.render()
+  }
+
+  this.setMode = (mode) => {
+    console.log('mode', mode)
+    this.mode = mode
+  }
+
+  // Events
+
   this.onMouseMove = (event) => {
     event.preventDefault()
-    mouse.set((event.clientX / window.innerWidth) * 2 - 1, -(event.clientY / window.innerHeight) * 2 + 1)
-    raycaster.setFromCamera(mouse, this.camera)
-    var intersects = raycaster.intersectObjects(objects)
+    this.mouse.set((event.clientX / window.innerWidth) * 2 - 1, -(event.clientY / window.innerHeight) * 2 + 1)
+    this.raycaster.setFromCamera(this.mouse, this.camera)
+    var intersects = this.raycaster.intersectObjects(objects)
     if (intersects.length > 0) {
       var intersect = intersects[0]
-      rollOverMesh.position.copy(intersect.point).add(intersect.face.normal)
-      rollOverMesh.position.divideScalar(50).floor().multiplyScalar(50).addScalar(25)
+      this.pointer.position.copy(intersect.point).add(intersect.face.normal)
+      this.pointer.position.divideScalar(50).floor().multiplyScalar(50).addScalar(25)
     }
     this.render()
   }
 
   this.onMouseDown = (event) => {
     event.preventDefault()
-    mouse.set((event.clientX / window.innerWidth) * 2 - 1, -(event.clientY / window.innerHeight) * 2 + 1)
-    raycaster.setFromCamera(mouse, this.camera)
-    var intersects = raycaster.intersectObjects(objects)
+    this.mouse.set((event.clientX / window.innerWidth) * 2 - 1, -(event.clientY / window.innerHeight) * 2 + 1)
+    this.raycaster.setFromCamera(this.mouse, this.camera)
+    var intersects = this.raycaster.intersectObjects(objects)
     if (intersects.length > 0) {
       var intersect = intersects[0]
       // delete cube
@@ -135,22 +214,6 @@ function Poodle () {
       }
       this.render()
     }
-  }
-
-  this.add = (pos) => {
-    const stepped = new THREE.Vector3().copy(pos).divideScalar(this.scale).floor().multiplyScalar(this.scale).addScalar(this.scale / 2)
-
-    var voxel = this.cube()
-
-    voxel.position.set(stepped.x, stepped.y, stepped.z)
-    scene.add(voxel)
-    objects.push(voxel)
-  }
-
-  this.focus = () => {
-    var position = new THREE.Vector3().copy(this.target.position)
-    this.target.localToWorld(position)
-    this.camera.lookAt(position)
   }
 
   this.onKeyDown = (e) => {
@@ -185,13 +248,27 @@ function Poodle () {
       this.camera.translateX(this.scale)
     }
     if (e.key === 'x') {
-      this.camera.position.y += this.scale
+      plane.position.y += this.scale
     }
     if (e.key === 'z') {
-      this.camera.position.y -= this.scale
+      plane.position.y -= this.scale
     }
+    // Options
     if (e.key === 'q') {
       this.target.position.set(0, 0, 0)
+    }
+    if (e.key === 'h') {
+      this.toggleGuide()
+    }
+
+    if (e.key === '1') {
+      this.setMode('floor')
+    }
+    if (e.key === '2') {
+      this.setMode('ramp')
+    }
+    if (e.key === '3') {
+      this.setMode('wall')
     }
     this.focus()
   }
@@ -203,27 +280,7 @@ function Poodle () {
     this.focus()
   }
 
-  this.render = () => {
-    this.renderer.render(scene, this.camera)
-  }
-
-  this.resize = (w, h) => {
-    document.location.hash = `#${w}x${h}`
-    this.el.width = w
-    this.el.height = h
-    this.el.style.width = w + 'px'
-    this.el.style.height = h + 'px'
-    this.center()
-    this.camera.aspect = w / h
-    this.camera.updateProjectionMatrix()
-    this.renderer.setSize(w, h)
-  }
-
-  this.center = () => {
-    this.offset.x = (window.innerWidth - this.el.width) / 2
-    this.offset.y = -(window.innerHeight - this.el.height) / 2
-    this.el.setAttribute('style', `left:${parseInt(this.offset.x)}px;top:${-parseInt(this.offset.y)}px`)
-  }
+  // Functions
 
   function grab (base64, name = 'export.png') {
     const link = document.createElement('a')
