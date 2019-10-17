@@ -6,17 +6,11 @@ function Poodle () {
   this.offset = { x: 0, y: 0 }
 
   this.bounds = { x: 1000, z: 1000 }
-
-  var targetGeo = new THREE.Geometry()
-  targetGeo.vertices.push(new THREE.Vector3(this.scale / 2, 0, this.scale / 2))
-  targetGeo.vertices.push(new THREE.Vector3(this.scale / 2, 0, -this.scale / 2))
-  targetGeo.vertices.push(new THREE.Vector3(-this.scale / 2, 0, -this.scale / 2))
-  targetGeo.vertices.push(new THREE.Vector3(-this.scale / 2, 0, this.scale / 2))
-  targetGeo.vertices.push(new THREE.Vector3(this.scale / 2, 0, this.scale / 2))
-
+  this.scene = new THREE.Scene()
   this.camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 10000)
   this.renderer = new THREE.WebGLRenderer({ antialias: false, preserveDrawingBuffer: true, logarithmicDepthBuffer: true })
-  this.target = new THREE.Line(targetGeo, new THREE.MeshBasicMaterial({ color: 0x72dec2, visible: true }))
+  this.target = new THREE.Line(new THREE.Geometry(), new THREE.MeshBasicMaterial({ color: 0x72dec2, visible: true }))
+  this.contact = new THREE.Mesh(new THREE.Geometry(), new THREE.MeshBasicMaterial({ visible: false }))
   this.grid = new THREE.GridHelper(20 * this.scale, 20)
   this.pointer = new THREE.Mesh(new THREE.BoxBufferGeometry(this.scale, this.scale, this.scale), new THREE.MeshBasicMaterial({ color: 0xff0000, wireframe: true }))
   this.raycaster = new THREE.Raycaster()
@@ -28,21 +22,19 @@ function Poodle () {
   this.showGuide = true
   this.mode = 'floor'
 
-  var scene
   var objects = []
 
   this.install = (host = document.body) => {
-    scene = new THREE.Scene()
-    scene.background = new THREE.Color(0xffffff)
+    this.scene.background = new THREE.Color(0xffffff)
 
-    var geometry = new THREE.PlaneBufferGeometry(this.bounds.x, this.bounds.z)
-    geometry.rotateX(-Math.PI / 2)
-    this.contact = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({ visible: false }))
+    this.target.geometry = this._target()
+    this.contact.geometry = this._contact()
+
     this.contact.add(this.grid)
     this.contact.add(this.target)
     objects.push(this.contact)
-    scene.add(this.pointer)
-    scene.add(this.contact)
+    this.scene.add(this.pointer)
+    this.scene.add(this.contact)
 
     document.addEventListener('mousemove', this.onMouseMove, false)
     document.addEventListener('mousedown', this.onMouseDown, false)
@@ -120,6 +112,22 @@ function Poodle () {
     ]
   }
 
+  this._target = () => {
+    const geo = new THREE.Geometry()
+    geo.vertices.push(new THREE.Vector3(this.scale / 2, 0, this.scale / 2))
+    geo.vertices.push(new THREE.Vector3(this.scale / 2, 0, -this.scale / 2))
+    geo.vertices.push(new THREE.Vector3(-this.scale / 2, 0, -this.scale / 2))
+    geo.vertices.push(new THREE.Vector3(-this.scale / 2, 0, this.scale / 2))
+    geo.vertices.push(new THREE.Vector3(this.scale / 2, 0, this.scale / 2))
+    return geo
+  }
+
+  this._contact = () => {
+    const geo = new THREE.PlaneBufferGeometry(this.bounds.x, this.bounds.z)
+    geo.rotateX(-Math.PI / 2)
+    return geo
+  }
+
   this.guides = (size, scale) => {
     return {
       RTF: new THREE.Vector3(scale * (size.x / 2), scale * (size.y / 2), scale * (size.z / 2)),
@@ -141,7 +149,7 @@ function Poodle () {
     const stepped = new THREE.Vector3().copy(pos).divideScalar(this.scale).floor().multiplyScalar(this.scale).addScalar(this.scale / 2)
     var voxel = this[this.mode]()
     voxel.position.set(stepped.x, stepped.y, stepped.z)
-    scene.add(voxel)
+    this.scene.add(voxel)
     objects.push(voxel)
   }
 
@@ -152,7 +160,7 @@ function Poodle () {
   }
 
   this.render = () => {
-    this.renderer.render(scene, this.camera)
+    this.renderer.render(this.scene, this.camera)
   }
 
   this.resize = (w, h) => {
@@ -209,7 +217,7 @@ function Poodle () {
       // delete cube
       if (event.shiftKey) {
         if (intersect.object !== this.contact) {
-          scene.remove(intersect.object)
+          this.scene.remove(intersect.object)
           objects.splice(objects.indexOf(intersect.object), 1)
         }
         // create cube
