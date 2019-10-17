@@ -5,7 +5,7 @@ function Poodle () {
   this.scale = 50
   this.offset = { x: 0, y: 0 }
   this.bounds = { x: 1000, z: 1000 }
-  this.showGrid = true
+  this.showGrid = false
   this.mode = 'floor'
   this.orientation = 0
   this.objects = []
@@ -41,6 +41,7 @@ function Poodle () {
   }
 
   this.start = (w, h) => {
+    this.grid.material.visible = false
     this.camera.position.set(500, 800, 1300)
     this.resize(w, h)
     this.setMode('floor')
@@ -74,6 +75,33 @@ function Poodle () {
     return geo
   }
 
+  this._handle = () => {
+    const geo = new THREE.Geometry()
+    const g = this.guides({ x: 1, y: 0.0125, z: 1 })
+    for (const vertex of [g.RTF, g.RTB]) {
+      geo.vertices.push(vertex)
+    }
+    return geo
+  }
+
+  this._pole = () => {
+    const geo = new THREE.Geometry()
+    const g = this.guides({ x: 1, y: 1, z: 0 })
+    for (const vertex of [g.RTF, g.RBB]) {
+      geo.vertices.push(vertex)
+    }
+    return geo
+  }
+
+  this._edge = () => {
+    const geo = new THREE.Geometry()
+    const g = this.guides({ x: 1, y: 0.0125, z: 1 })
+    for (const vertex of [g.RCF, g.RTC]) {
+      geo.vertices.push(vertex)
+    }
+    return geo
+  }
+
   this._target = () => {
     const geo = new THREE.Geometry()
     geo.vertices.push(new THREE.Vector3(this.scale / 2, 0, this.scale / 2))
@@ -99,7 +127,11 @@ function Poodle () {
       RBF: new THREE.Vector3(scale * (size.x / 2), -scale * (size.y / 2), scale * (size.z / 2)),
       RBB: new THREE.Vector3(scale * (size.x / 2), -scale * (size.y / 2), scale * (-size.z / 2)),
       LBF: new THREE.Vector3(scale * (-size.x / 2), -scale * (size.y / 2), scale * (size.z / 2)),
-      LBB: new THREE.Vector3(scale * (-size.x / 2), -scale * (size.y / 2), scale * (-size.z / 2))
+      LBB: new THREE.Vector3(scale * (-size.x / 2), -scale * (size.y / 2), scale * (-size.z / 2)),
+
+      RCF: new THREE.Vector3(scale * (size.x / 2), scale * (size.y / 4), scale * (size.z / 2)),
+      CTF: new THREE.Vector3(scale * (size.x / 4), scale * (size.y / 2), scale * (size.z / 2)),
+      RTC: new THREE.Vector3(scale * (size.x / 2), scale / 2, 0)
     }
   }
 
@@ -275,6 +307,15 @@ function Poodle () {
     }
     if (e.key === '3') {
       this.setMode('wall')
+    }
+    if (e.key === '4') {
+      this.setMode('handle')
+    }
+    if (e.key === '5') {
+      this.setMode('pole')
+    }
+    if (e.key === '6') {
+      this.setMode('edge')
     }
     this.focus()
   }
