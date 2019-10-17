@@ -317,6 +317,15 @@ function Poodle () {
     if (e.key === '6') {
       this.setMode('edge')
     }
+
+    if (e.key === '~' || e.key === '?') {
+      const controls = document.getElementById('controls');
+      if (controls.style.display === 'none') {
+        controls.setAttribute('style', `display:'inline';left:${parseInt(this.offset.x)}px;top:${-parseInt(this.offset.y)}px`)
+      } else {
+        controls.style.display = 'none';
+      }
+    }
     this.focus()
   }
 

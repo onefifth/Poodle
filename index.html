@@ -28,6 +28,8 @@ shift click remove
 tab toggle grid
 del delete last
 
+~ toggle controls
+
 -->
 <!DOCTYPE html>
 <html lang="en">
@@ -47,12 +49,46 @@ del delete last
       const height = size.indexOf('x') > 2 ? parseInt(size.split('x')[1]) : window.innerHeight - 15
       const poodle = new Poodle()
       poodle.install()
-      poodle.start(width,height)      
+      poodle.start(width,height)
     </script>
     <style>
       * { margin:0;padding:0;border:0;outline:0; position:fixed }
       body { overflow: hidden; background:#eee }
       canvas { border-radius: 3px; transition: top 250ms, left 250ms; image-rendering: pixelated; image-rendering: optimizeSpeed; }
+      #controls { padding: 4px 8px; }
     </style>
+    <div id="controls" style="display: none;">
+      <pre>
+w move forward
+a move left
+s move backward
+d move right
+x move up
+z move down
+
+shift w lookAt forward
+shift a lookAt left
+shift s lookAt backward
+shift d lookAt right
+shift x lookAt up
+shift z lookAt down
+
+r orientation
+q center
+e export
+
+1 floor
+2 ramp
+3 wall
+4 border
+
+click add
+shift click remove
+tab toggle grid
+del delete last
+
+? toggle controls
+      </pre>
+    </div>
   </body>
 </html>
