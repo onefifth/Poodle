@@ -4,25 +4,22 @@
 function Poodle () {
   this.scale = 50
   this.offset = { x: 0, y: 0 }
-
   this.bounds = { x: 1000, z: 1000 }
+  this.showGuide = true
+  this.mode = 'floor'
+  this.objects = []
+
   this.scene = new THREE.Scene()
   this.camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 10000)
   this.renderer = new THREE.WebGLRenderer({ antialias: false, preserveDrawingBuffer: true, logarithmicDepthBuffer: true })
-  this.target = new THREE.Line(new THREE.Geometry(), new THREE.MeshBasicMaterial({ color: 0x72dec2, visible: true }))
+  this.target = new THREE.Line(new THREE.Geometry(), new THREE.MeshBasicMaterial({ color: 0x72dec2 }))
+  this.pointer = new THREE.Line(new THREE.Geometry(), new THREE.MeshBasicMaterial({ color: 0xff0000 }))
   this.contact = new THREE.Mesh(new THREE.Geometry(), new THREE.MeshBasicMaterial({ visible: false }))
   this.grid = new THREE.GridHelper(20 * this.scale, 20)
-  this.pointer = new THREE.Mesh(new THREE.BoxBufferGeometry(this.scale, this.scale, this.scale), new THREE.MeshBasicMaterial({ color: 0xff0000, wireframe: true }))
   this.raycaster = new THREE.Raycaster()
   this.mouse = new THREE.Vector2()
 
   this.el = this.renderer.domElement
-
-  // Controls
-  this.showGuide = true
-  this.mode = 'floor'
-
-  var objects = []
 
   this.install = (host = document.body) => {
     this.scene.background = new THREE.Color(0xffffff)
@@ -32,7 +29,7 @@ function Poodle () {
 
     this.contact.add(this.grid)
     this.contact.add(this.target)
-    objects.push(this.contact)
+    this.objects.push(this.contact)
     this.scene.add(this.pointer)
     this.scene.add(this.contact)
 
@@ -47,69 +44,39 @@ function Poodle () {
   this.start = (w, h) => {
     this.camera.position.set(500, 800, 1300)
     this.resize(w, h)
+    this.setMode('floor')
     this.focus()
     this.render()
   }
 
-  this.floor = (size, scale = this.scale) => {
-    var geometry = new THREE.Geometry()
-
-    const vertices = this._cube(size)
-
+  this._floor = () => {
+    const geo = new THREE.Geometry()
+    const g = this.guides()
+    const vertices = [g.RBF, g.RBB, g.LBB, g.LBF, g.RBF]
     for (const vertex of vertices) {
-      geometry.vertices.push(vertex)
+      geo.vertices.push(vertex)
     }
-
-    return new THREE.Line(geometry, this.material())
+    return geo
   }
 
-  this.ramp = (size, scale = this.scale) => {
-    var geometry = new THREE.Geometry()
-
-    const vertices = this._ramp(size)
-
+  this._ramp = () => {
+    const geo = new THREE.Geometry()
+    const g = this.guides()
+    const vertices = [g.RTF, g.RTB, g.LBB, g.LBF, g.RTF]
     for (const vertex of vertices) {
-      geometry.vertices.push(vertex)
+      geo.vertices.push(vertex)
     }
-
-    return new THREE.Line(geometry, this.material())
+    return geo
   }
 
-  this.wall = (size, scale = this.scale) => {
-    var geometry = new THREE.Geometry()
-
-    const vertices = this._wall(size)
-
+  this._wall = () => {
+    const geo = new THREE.Geometry()
+    const g = this.guides()
+    const vertices = [g.RTF, g.RTB, g.RBB, g.RBF, g.RTF]
     for (const vertex of vertices) {
-      geometry.vertices.push(vertex)
+      geo.vertices.push(vertex)
     }
-
-    return new THREE.Line(geometry, this.material())
-  }
-
-  this.create = (name, pos = { x: 0, y: 0, z: 0 }, size = { x: 1, y: 1, z: 1 }) => {
-    return this[name](pos, size)
-  }
-
-  this._cube = (size = { x: 1, y: 1, z: 1 }, scale = this.scale) => {
-    const g = this.guides(size, scale)
-    return [
-      g.RBF, g.RBB, g.LBB, g.LBF, g.RBF
-    ]
-  }
-
-  this._ramp = (size = { x: 1, y: 1, z: 1 }, scale = this.scale) => {
-    const g = this.guides(size, scale)
-    return [
-      g.RTF, g.RTB, g.LBB, g.LBF, g.RTF
-    ]
-  }
-
-  this._wall = (size = { x: 1, y: 1, z: 1 }, scale = this.scale) => {
-    const g = this.guides(size, scale)
-    return [
-      g.RTF, g.RTB, g.RBB, g.RBF, g.RTF
-    ]
+    return geo
   }
 
   this._target = () => {
@@ -128,7 +95,7 @@ function Poodle () {
     return geo
   }
 
-  this.guides = (size, scale) => {
+  this.guides = (size = { x: 1, y: 1, z: 1 }, scale = this.scale) => {
     return {
       RTF: new THREE.Vector3(scale * (size.x / 2), scale * (size.y / 2), scale * (size.z / 2)),
       RTB: new THREE.Vector3(scale * (size.x / 2), scale * (size.y / 2), scale * (-size.z / 2)),
@@ -147,10 +114,10 @@ function Poodle () {
 
   this.add = (pos) => {
     const stepped = new THREE.Vector3().copy(pos).divideScalar(this.scale).floor().multiplyScalar(this.scale).addScalar(this.scale / 2)
-    var voxel = this[this.mode]()
+    var voxel = new THREE.Line(this[`_${this.mode}`](), this.material())
     voxel.position.set(stepped.x, stepped.y, stepped.z)
     this.scene.add(voxel)
-    objects.push(voxel)
+    this.objects.push(voxel)
   }
 
   this.focus = () => {
@@ -190,6 +157,7 @@ function Poodle () {
   this.setMode = (mode) => {
     console.log('mode', mode)
     this.mode = mode
+    this.pointer.geometry = this[`_${mode}`]()
   }
 
   // Events
@@ -198,7 +166,7 @@ function Poodle () {
     event.preventDefault()
     this.mouse.set((event.layerX / this.el.width) * 2 - 1, -(event.layerY / this.el.height) * 2 + 1)
     this.raycaster.setFromCamera(this.mouse, this.camera)
-    var intersects = this.raycaster.intersectObjects(objects)
+    var intersects = this.raycaster.intersectObjects(this.objects)
     if (intersects.length > 0) {
       var intersect = intersects[0]
       this.pointer.position.copy(intersect.point).add(intersect.face.normal)
@@ -211,14 +179,14 @@ function Poodle () {
     event.preventDefault()
     this.mouse.set((event.layerX / this.el.width) * 2 - 1, -(event.layerY / this.el.height) * 2 + 1)
     this.raycaster.setFromCamera(this.mouse, this.camera)
-    var intersects = this.raycaster.intersectObjects(objects)
+    var intersects = this.raycaster.intersectObjects(this.objects)
     if (intersects.length > 0) {
       var intersect = intersects[0]
       // delete cube
       if (event.shiftKey) {
         if (intersect.object !== this.contact) {
           this.scene.remove(intersect.object)
-          objects.splice(objects.indexOf(intersect.object), 1)
+          this.objects.splice(this.objects.indexOf(intersect.object), 1)
         }
         // create cube
       } else {
