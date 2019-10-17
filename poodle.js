@@ -5,7 +5,7 @@ function Poodle () {
   this.scale = 50
   this.offset = { x: 0, y: 0 }
   this.bounds = { x: 1000, z: 1000 }
-  this.showGuide = true
+  this.showGrid = true
   this.mode = 'floor'
   this.orientation = 0
   this.objects = []
@@ -153,8 +153,8 @@ function Poodle () {
   }
 
   this.toggleGuide = () => {
-    this.showGuide = !this.showGuide
-    this.grid.material.visible = this.showGuide
+    this.showGrid = !this.showGrid
+    this.grid.material.visible = this.showGrid
     this.render()
   }
 
@@ -268,7 +268,14 @@ function Poodle () {
 
   this.onKeyUp = (e) => {
     if (e.key === 'e') {
+      this.pointer.material.visible = false
+      this.target.material.visible = false
+      this.grid.material.visible = false
+      this.render()
       grab(this.renderer.domElement.toDataURL('image/png'))
+      this.pointer.material.visible = true
+      this.target.material.visible = true
+      this.grid.material.visible = this.showGrid
     }
     this.focus()
   }

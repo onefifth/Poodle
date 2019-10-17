@@ -7,5 +7,4 @@ Small, Sharp Scene Tool
 - right click to move target
 - object scale with brackets
 - arc mesh
-- rotate object
 - fix issue with camera rotation
