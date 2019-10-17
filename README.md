@@ -4,7 +4,6 @@ Small, Sharp Scene Tool
 
 ## TODO: 
 
-- resize canvas to target
 - move camera properly
 - preview shape mode
 - erase
