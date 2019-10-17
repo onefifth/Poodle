@@ -3,6 +3,7 @@
 
 function Poodle () {
   this.scale = 50
+  this.offset = { x: 0, y: 0 }
 
   this.camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 10000)
   this.renderer = new THREE.WebGLRenderer({ antialias: false, preserveDrawingBuffer: true, logarithmicDepthBuffer: true })
@@ -48,8 +49,7 @@ function Poodle () {
 
   this.start = (w, h) => {
     this.camera.position.set(500, 800, 1300)
-    this.renderer.setSize(window.innerWidth, window.innerHeight)
-    // this.resize(w, h)
+    this.resize(w, h)
     this.focus()
     this.render()
   }
@@ -183,7 +183,7 @@ function Poodle () {
 
   this.onMouseMove = (event) => {
     event.preventDefault()
-    this.mouse.set((event.clientX / window.innerWidth) * 2 - 1, -(event.clientY / window.innerHeight) * 2 + 1)
+    this.mouse.set((event.layerX / this.el.width) * 2 - 1, -(event.layerY / this.el.height) * 2 + 1)
     this.raycaster.setFromCamera(this.mouse, this.camera)
     var intersects = this.raycaster.intersectObjects(objects)
     if (intersects.length > 0) {
@@ -196,7 +196,7 @@ function Poodle () {
 
   this.onMouseDown = (event) => {
     event.preventDefault()
-    this.mouse.set((event.clientX / window.innerWidth) * 2 - 1, -(event.clientY / window.innerHeight) * 2 + 1)
+    this.mouse.set((event.layerX / this.el.width) * 2 - 1, -(event.layerY / this.el.height) * 2 + 1)
     this.raycaster.setFromCamera(this.mouse, this.camera)
     var intersects = this.raycaster.intersectObjects(objects)
     if (intersects.length > 0) {
